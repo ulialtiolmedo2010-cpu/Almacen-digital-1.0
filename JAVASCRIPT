@@ -1,0 +1,286 @@
+// script.js
+
+// Configuración Global
+const TOTAL_COMPUTADORAS = 30;
+let computadoras = [];
+let historialDevoluciones = [];
+
+// Inicialización de datos
+document.addEventListener("DOMContentLoaded", () => {
+  cargarDatosLocalStorage();
+  renderizarMatriz();
+  renderizarHistorial();
+  
+  // Actualizar cronómetros en tiempo real cada segundo
+  setInterval(actualizarCronometros, 1000);
+
+  // Escuchar búsqueda
+  document.getElementById("input-busqueda").addEventListener("input", (e) => {
+    renderizarMatriz(e.target.value.toLowerCase());
+  });
+});
+
+// Cargar o Inicializar
+function cargarDatosLocalStorage() {
+  const compusGuardadas = localStorage.getItem("espacio_digital_compus");
+  const historialGuardado = localStorage.getItem("espacio_digital_historial");
+
+  if (compusGuardadas) {
+    computadoras = JSON.parse(compusGuardadas);
+  } else {
+    // Generar las 30 computadoras por defecto
+    for (let i = 1; i <= TOTAL_COMPUTADORAS; i++) {
+      computadoras.push({
+        id: i,
+        numero: i < 10 ? `0${i}` : `${i}`,
+        estado: 'disponible', // 'disponible' | 'prestada'
+        alumno: '',
+        profesor: '',
+        obsSalida: '',
+        horaSalida: null
+      });
+    }
+    guardarEnLocalStorage();
+  }
+
+  if (historialGuardado) {
+    historialDevoluciones = JSON.parse(historialGuardado);
+  }
+}
+
+function guardarEnLocalStorage() {
+  localStorage.setItem("espacio_digital_compus", JSON.stringify(computadoras));
+  localStorage.setItem("espacio_digital_historial", JSON.stringify(historialDevoluciones));
+}
+
+// Renderizar Matriz de Computadoras
+function renderizarMatriz(filtro = '') {
+  const grid = document.getElementById("grid-carrito");
+  grid.innerHTML = '';
+
+  let disponiblesCount = 0;
+  let prestadasCount = 0;
+
+  computadoras.forEach(compu => {
+    if (compu.estado === 'disponible') disponiblesCount++;
+    if (compu.estado === 'prestada') prestadasCount++;
+
+    // Filtrar búsqueda
+    const textoBuscado = `${compu.numero} ${compu.alumno} ${compu.profesor}`.toLowerCase();
+    if (filtro && !textoBuscado.includes(filtro)) return;
+
+    const esPrestada = compu.estado === 'prestada';
+    
+    const card = document.createElement("div");
+    card.className = `card-compu border rounded-xl p-3 flex flex-col justify-between relative shadow-md ${
+      esPrestada 
+        ? 'bg-rose-950/20 border-rose-500/40 text-slate-100' 
+        : 'bg-slate-800/80 border-slate-700/70 text-slate-100'
+    }`;
+
+    card.innerHTML = `
+      <div class="flex justify-between items-center mb-2">
+        <span class="text-xs font-bold px-2 py-0.5 rounded ${
+          esPrestada ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+        }">
+          Compu ${compu.numero}
+        </span>
+        <button onclick="abrirModalQR('${compu.numero}')" class="text-slate-400 hover:text-indigo-400 transition" title="Ver Código QR">
+          <i class="fa-solid fa-qrcode text-xs"></i>
+        </button>
+      </div>
+
+      ${esPrestada ? `
+        <div class="my-2 space-y-1">
+          <p class="text-xs font-semibold text-slate-200 truncate"><i class="fa-solid fa-user text-[10px] text-rose-400 mr-1"></i> ${compu.alumno}</p>
+          <p class="text-[11px] text-slate-400 truncate"><i class="fa-solid fa-user-tie text-[10px] mr-1"></i> ${compu.profesor}</p>
+          <div class="text-xs font-mono font-bold text-amber-400 mt-2 bg-slate-900/60 p-1.5 rounded text-center border border-slate-700/50" id="timer-${compu.id}">
+            ${calcularTiempoTranscurrido(compu.horaSalida)}
+          </div>
+        </div>
+        <button onclick="abrirModalDevolucion(${compu.id})" class="w-full mt-2 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 shadow-sm transition">
+          <i class="fa-solid fa-arrow-rotate-left text-xs"></i> Devolver
+        </button>
+      ` : `
+        <div class="my-3 text-center text-slate-500">
+          <i class="fa-solid fa-laptop text-2xl mb-1 text-slate-600"></i>
+          <p class="text-[11px]">Guardada en carrito</p>
+        </div>
+        <button onclick="abrirModalPrestamo(${compu.id})" class="w-full py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 shadow-sm transition">
+          <i class="fa-solid fa-hand-holding text-xs"></i> Prestar
+        </button>
+      `}
+    `;
+
+    grid.appendChild(card);
+  });
+
+  // Actualizar indicadores superiores
+  document.getElementById("stat-disponibles").innerText = disponiblesCount;
+  document.getElementById("stat-prestadas").innerText = prestadasCount;
+}
+
+// Cálculo de tiempo transcurrido
+function calcularTiempoTranscurrido(horaSalida) {
+  if (!horaSalida) return "00m 00s";
+  const inicio = new Date(horaSalida);
+  const ahora = new Date();
+  const diffMs = ahora - inicio;
+
+  const minutos = Math.floor(diffMs / 60000);
+  const segundos = Math.floor((diffMs % 60000) / 1000);
+
+  const minsStr = minutos < 10 ? `0${minutos}` : minutos;
+  const segsStr = segundos < 10 ? `0${segundos}` : segundos;
+
+  return `${minsStr}m ${segsStr}s`;
+}
+
+function actualizarCronometros() {
+  computadoras.forEach(compu => {
+    if (compu.estado === 'prestada') {
+      const el = document.getElementById(`timer-${compu.id}`);
+      if (el) el.innerText = calcularTiempoTranscurrido(compu.horaSalida);
+    }
+  });
+}
+
+// Modal Préstamo
+function abrirModalPrestamo(id) {
+  const compu = computadoras.find(c => c.id === id);
+  if (!compu) return;
+
+  document.getElementById("prestamo-id-compu").value = compu.id;
+  document.getElementById("modal-prestamo-titulo").innerText = `Computadora N° ${compu.numero}`;
+  document.getElementById("input-alumno").value = '';
+  document.getElementById("input-profesor").value = '';
+  document.getElementById("input-obs-salida").value = '';
+
+  document.getElementById("modal-prestamo").classList.remove("hidden");
+}
+
+function confirmarPrestamo(e) {
+  e.preventDefault();
+  const id = parseInt(document.getElementById("prestamo-id-compu").value);
+  const alumno = document.getElementById("input-alumno").value;
+  const profesor = document.getElementById("input-profesor").value;
+  const obsSalida = document.getElementById("input-obs-salida").value;
+
+  const compu = computadoras.find(c => c.id === id);
+  if (compu) {
+    compu.estado = 'prestada';
+    compu.alumno = alumno;
+    compu.profesor = profesor;
+    compu.obsSalida = obsSalida;
+    compu.horaSalida = new Date().toISOString();
+
+    guardarEnLocalStorage();
+    renderizarMatriz();
+    cerrarModal('modal-prestamo');
+  }
+}
+
+// Modal Devolución
+function abrirModalDevolucion(id) {
+  const compu = computadoras.find(c => c.id === id);
+  if (!compu) return;
+
+  document.getElementById("dev-id-compu").value = compu.id;
+  document.getElementById("modal-devolucion-titulo").innerText = `Devolver Computadora N° ${compu.numero}`;
+  document.getElementById("dev-alumno").innerText = compu.alumno;
+  document.getElementById("dev-profesor").innerText = compu.profesor;
+  document.getElementById("dev-tiempo").innerText = calcularTiempoTranscurrido(compu.horaSalida);
+  document.getElementById("input-falla").value = '';
+
+  document.getElementById("modal-devolucion").classList.remove("hidden");
+}
+
+function confirmarDevolucion(e) {
+  e.preventDefault();
+  const id = parseInt(document.getElementById("dev-id-compu").value);
+  const falla = document.getElementById("input-falla").value;
+
+  const compu = computadoras.find(c => c.id === id);
+  if (compu) {
+    const tiempoTotal = calcularTiempoTranscurrido(compu.horaSalida);
+    const fechaHoraDevolucion = new Date().toLocaleString();
+
+    // Agregar al historial
+    historialDevoluciones.unshift({
+      numeroCompu: compu.numero,
+      alumno: compu.alumno,
+      profesor: compu.profesor,
+      fechaHora: fechaHoraDevolucion,
+      tiempoTotal: tiempoTotal,
+      falla: falla || 'Sin novedades'
+    });
+
+    // Resetear compu
+    compu.estado = 'disponible';
+    compu.alumno = '';
+    compu.profesor = '';
+    compu.obsSalida = '';
+    compu.horaSalida = null;
+
+    guardarEnLocalStorage();
+    renderizarMatriz();
+    renderizarHistorial();
+    cerrarModal('modal-devolucion');
+  }
+}
+
+// Renderizar Historial
+function renderizarHistorial() {
+  const tbody = document.getElementById("tabla-historial");
+  tbody.innerHTML = '';
+
+  document.getElementById("historial-count").innerText = `${historialDevoluciones.length} registros`;
+
+  if (historialDevoluciones.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" class="py-4 text-center text-slate-500">No hay devoluciones registradas aún.</td></tr>`;
+    return;
+  }
+
+  historialDevoluciones.forEach(item => {
+    const tr = document.createElement("tr");
+    tr.className = "hover:bg-slate-700/30 transition";
+
+    const tieneFalla = item.falla && item.falla !== 'Sin novedades';
+
+    tr.innerHTML = `
+      <td class="py-2 px-3 font-bold text-slate-200">Compu ${item.numeroCompu}</td>
+      <td class="py-2 px-3">${item.alumno}</td>
+      <td class="py-2 px-3 text-slate-400">${item.profesor}</td>
+      <td class="py-2 px-3 text-slate-400">${item.fechaHora}</td>
+      <td class="py-2 px-3 font-mono text-amber-400">${item.tiempoTotal}</td>
+      <td class="py-2 px-3">
+        ${tieneFalla 
+          ? `<span class="bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded text-[11px] inline-flex items-center gap-1">
+              <i class="fa-solid fa-triangle-exclamation"></i> ${item.falla}
+             </span>` 
+          : `<span class="text-slate-500">Sin fallas</span>`}
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// Modal QR
+function abrirModalQR(numeroCompu) {
+  document.getElementById("qr-compu-titulo").innerText = `Computadora N° ${numeroCompu}`;
+  const contenedorQR = document.getElementById("contenedor-qr");
+  contenedorQR.innerHTML = '';
+
+  // Generar QR con enlace de la compu
+  new QRCode(contenedorQR, {
+    text: `${window.location.origin}${window.location.pathname}?compu=${numeroCompu}`,
+    width: 140,
+    height: 140
+  });
+
+  document.getElementById("modal-qr").classList.remove("hidden");
+}
+
+function cerrarModal(id) {
+  document.getElementById(id).classList.add("hidden");
+}
