@@ -1,4 +1,3 @@
-<!-- index.html -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -6,200 +5,184 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Gestión de Carrito - Espacio Digital</title>
   
-  <!-- FontAwesome & TailwindCSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome para iconos -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
-  <!-- QRCode.js CDN -->
+  <!-- QRCode.js para generar códigos QR -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
-  <!-- CSS Personalizado -->
+  <!-- CSS Propiamente Local (Sin depender de Internet) -->
   <link rel="stylesheet" href="styles.css">
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen font-sans flex flex-col">
+<body>
 
   <!-- Header / Navbar -->
-  <header class="bg-slate-800 border-b border-slate-700 sticky top-0 z-30 shadow-md">
-    <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-      <div class="flex items-center gap-3">
-        <div class="bg-indigo-600 text-white p-2.5 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-500/30">
-          <i class="fa-solid fa-laptop-house text-xl"></i>
+  <header class="header">
+    <div class="header-content">
+      <div class="brand">
+        <div class="brand-icon">
+          <i class="fa-solid fa-laptop-house"></i>
         </div>
         <div>
-          <h1 class="text-xl font-bold bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">Espacio Digital</h1>
-          <p class="text-xs text-slate-400">Control e Inventario del Carrito Único</p>
+          <h1>Espacio Digital</h1>
+          <p>Control e Inventario del Carrito Único</p>
         </div>
       </div>
 
       <!-- Resumen rápido de métricas -->
-      <div class="flex items-center gap-4 text-sm">
-        <div class="bg-slate-700/50 px-3 py-1.5 rounded-lg border border-slate-600 flex items-center gap-2">
-          <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-          <span class="text-slate-300">Disponibles:</span>
-          <strong id="stat-disponibles" class="text-emerald-400 font-bold">0</strong>
+      <div class="metrics">
+        <div class="metric-badge">
+          <span class="dot emerald"></span>
+          <span>Disponibles:</span>
+          <strong id="stat-disponibles">0</strong>
         </div>
-        <div class="bg-slate-700/50 px-3 py-1.5 rounded-lg border border-slate-600 flex items-center gap-2">
-          <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span>
-          <span class="text-slate-300">En préstamo:</span>
-          <strong id="stat-prestadas" class="text-rose-400 font-bold">0</strong>
+        <div class="metric-badge">
+          <span class="dot rose"></span>
+          <span>En préstamo:</span>
+          <strong id="stat-prestadas">0</strong>
         </div>
       </div>
     </div>
   </header>
 
   <!-- Contenido Principal -->
-  <main class="max-w-7xl mx-auto px-4 py-6 flex-1 w-full space-y-8">
+  <main class="main-container">
     
     <!-- Sección Matriz del Carrito -->
-    <section>
-      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+    <section class="section">
+      <div class="section-header">
         <div>
-          <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
-            <i class="fa-solid fa-boxes-stacked text-indigo-400"></i> Estado del Carrito (30 Computadoras)
-          </h2>
-          <p class="text-xs text-slate-400">Selecciona una computadora verde para prestar o una roja para gestionar su devolución.</p>
+          <h2><i class="fa-solid fa-boxes-stacked"></i> Estado del Carrito (30 Computadoras)</h2>
+          <p>Selecciona una computadora verde para prestar o una roja para gestionar su devolución.</p>
         </div>
         
-        <!-- Buscador / Filtros rápidos -->
-        <div class="flex items-center gap-2">
-          <input type="text" id="input-busqueda" placeholder="Buscar por número o alumno..." class="bg-slate-800 border border-slate-700 text-xs px-3 py-2 rounded-lg text-slate-200 focus:outline-none focus:border-indigo-500 w-64">
+        <!-- Buscador -->
+        <div class="search-box">
+          <input type="text" id="input-busqueda" placeholder="Buscar por número o alumno...">
         </div>
       </div>
 
-      <!-- Grid de Tarjetas de Computadoras -->
-      <div id="grid-carrito" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-6 gap-3">
-        <!-- Generado dinámicamente por Javascript -->
+      <!-- Grid de Tarjetas -->
+      <div id="grid-carrito" class="grid-carrito">
+        <!-- Generado dinámicamente -->
       </div>
     </section>
 
     <!-- Sección Historial de Devoluciones -->
-    <section class="bg-slate-800/60 border border-slate-700/80 rounded-xl p-5 shadow-lg">
-      <div class="flex justify-between items-center mb-4">
-        <h3 class="text-md font-bold text-slate-200 flex items-center gap-2">
-          <i class="fa-solid fa-clock-rotate-left text-cyan-400"></i> Historial de Devoluciones y Registro
-        </h3>
-        <span class="text-xs text-slate-400" id="historial-count">0 registros</span>
+    <section class="section history-section">
+      <div class="section-header">
+        <h3><i class="fa-solid fa-clock-rotate-left"></i> Historial de Devoluciones y Registro</h3>
+        <span id="historial-count" class="count-tag">0 registros</span>
       </div>
 
-      <div class="overflow-x-auto">
-        <table class="w-full text-left text-xs text-slate-300">
-          <thead class="bg-slate-900/60 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-700">
+      <div class="table-responsive">
+        <table>
+          <thead>
             <tr>
-              <th class="py-2.5 px-3">Compu</th>
-              <th class="py-2.5 px-3">Alumno</th>
-              <th class="py-2.5 px-3">Autorizó</th>
-              <th class="py-2.5 px-3">Horario</th>
-              <th class="py-2.5 px-3">Tiempo Total</th>
-              <th class="py-2.5 px-3">Obs. / Fallas</th>
+              <th>Compu</th>
+              <th>Alumno</th>
+              <th>Autorizó</th>
+              <th>Horario</th>
+              <th>Tiempo Total</th>
+              <th>Obs. / Fallas</th>
             </tr>
           </thead>
-          <tbody id="tabla-historial" class="divide-y divide-slate-700/50">
-            <!-- Filas del historial agregadas dinámicamente -->
+          <tbody id="tabla-historial">
+            <!-- Filas dinámicas -->
           </tbody>
         </table>
       </div>
     </section>
   </main>
 
-  <!-- MODAL: REGISTRAR PRÉSTAMO DE COMPU -->
-  <div id="modal-prestamo" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center hidden">
-    <div class="bg-slate-800 border border-slate-700 rounded-xl p-6 w-full max-w-md shadow-2xl relative">
-      <button onclick="cerrarModal('modal-prestamo')" class="absolute top-4 right-4 text-slate-400 hover:text-white">
-        <i class="fa-solid fa-xmark text-lg"></i>
-      </button>
-
-      <div class="flex items-center gap-3 mb-4">
-        <div class="p-2.5 bg-emerald-500/20 text-emerald-400 rounded-lg">
-          <i class="fa-solid fa-hand-holding-hand text-xl"></i>
-        </div>
+  <!-- MODAL: REGISTRAR PRÉSTAMO -->
+  <div id="modal-prestamo" class="modal hidden">
+    <div class="modal-content">
+      <button onclick="cerrarModal('modal-prestamo')" class="close-btn"><i class="fa-solid fa-xmark"></i></button>
+      
+      <div class="modal-header">
+        <div class="modal-icon emerald-bg"><i class="fa-solid fa-hand-holding-hand"></i></div>
         <div>
-          <h3 class="font-bold text-slate-100">Registrar Salida</h3>
-          <p class="text-xs text-slate-400" id="modal-prestamo-titulo">Compu N° --</p>
+          <h3>Registrar Salida</h3>
+          <p id="modal-prestamo-titulo">Compu N° --</p>
         </div>
       </div>
 
-      <form id="form-prestamo" onsubmit="confirmarPrestamo(event)" class="space-y-4">
+      <form id="form-prestamo" onsubmit="confirmarPrestamo(event)">
         <input type="hidden" id="prestamo-id-compu">
         
-        <div>
-          <label class="block text-xs text-slate-300 mb-1">Alumno / Persona que se la lleva</label>
-          <input type="text" id="input-alumno" required placeholder="Ej: Ramiro Gil" class="w-full bg-slate-900 border border-slate-700 text-sm px-3 py-2 rounded-lg text-slate-100 focus:outline-none focus:border-indigo-500">
+        <div class="form-group">
+          <label>Alumno / Persona que se la lleva</label>
+          <input type="text" id="input-alumno" required placeholder="Ej: Ramiro Gil">
         </div>
 
-        <div>
-          <label class="block text-xs text-slate-300 mb-1">Profesor / Preceptor que la autoriza</label>
-          <input type="text" id="input-profesor" required placeholder="Ej: Prof. García" class="w-full bg-slate-900 border border-slate-700 text-sm px-3 py-2 rounded-lg text-slate-100 focus:outline-none focus:border-indigo-500">
+        <div class="form-group">
+          <label>Profesor / Preceptor que la autoriza</label>
+          <input type="text" id="input-profesor" required placeholder="Ej: Prof. García">
         </div>
 
-        <div>
-          <label class="block text-xs text-slate-300 mb-1">Observación inicial (Opcional)</label>
-          <input type="text" id="input-obs-salida" placeholder="Ej: Detalles de batería, sin mouse..." class="w-full bg-slate-900 border border-slate-700 text-sm px-3 py-2 rounded-lg text-slate-100 focus:outline-none focus:border-indigo-500">
+        <div class="form-group">
+          <label>Observación inicial (Opcional)</label>
+          <input type="text" id="input-obs-salida" placeholder="Ej: Detalles de batería, sin mouse...">
         </div>
 
-        <div class="flex gap-2 justify-end pt-2">
-          <button type="button" onclick="cerrarModal('modal-prestamo')" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-xs font-semibold">Cancelar</button>
-          <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-xs font-semibold text-white shadow-lg shadow-indigo-600/30">Confirmar Préstamo</button>
+        <div class="modal-actions">
+          <button type="button" onclick="cerrarModal('modal-prestamo')" class="btn secondary">Cancelar</button>
+          <button type="submit" class="btn primary">Confirmar Préstamo</button>
         </div>
       </form>
     </div>
   </div>
 
   <!-- MODAL: REGISTRAR DEVOLUCIÓN -->
-  <div id="modal-devolucion" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center hidden">
-    <div class="bg-slate-800 border border-slate-700 rounded-xl p-6 w-full max-w-md shadow-2xl relative">
-      <button onclick="cerrarModal('modal-devolucion')" class="absolute top-4 right-4 text-slate-400 hover:text-white">
-        <i class="fa-solid fa-xmark text-lg"></i>
-      </button>
+  <div id="modal-devolucion" class="modal hidden">
+    <div class="modal-content">
+      <button onclick="cerrarModal('modal-devolucion')" class="close-btn"><i class="fa-solid fa-xmark"></i></button>
 
-      <div class="flex items-center gap-3 mb-4">
-        <div class="p-2.5 bg-indigo-500/20 text-indigo-400 rounded-lg">
-          <i class="fa-solid fa-arrow-rotate-left text-xl"></i>
-        </div>
+      <div class="modal-header">
+        <div class="modal-icon indigo-bg"><i class="fa-solid fa-arrow-rotate-left"></i></div>
         <div>
-          <h3 class="font-bold text-slate-100">Registrar Devolución</h3>
-          <p class="text-xs text-slate-400" id="modal-devolucion-titulo">Compu N° --</p>
+          <h3>Registrar Devolución</h3>
+          <p id="modal-devolucion-titulo">Compu N° --</p>
         </div>
       </div>
 
-      <div class="bg-slate-900/60 p-3 rounded-lg border border-slate-700/50 text-xs space-y-1 mb-4">
-        <p class="text-slate-300"><strong class="text-slate-400">Alumno:</strong> <span id="dev-alumno">--</span></p>
-        <p class="text-slate-300"><strong class="text-slate-400">Autorizó:</strong> <span id="dev-profesor">--</span></p>
-        <p class="text-slate-300"><strong class="text-slate-400">Tiempo fuera:</strong> <span id="dev-tiempo" class="text-amber-400 font-bold">--</span></p>
+      <div class="modal-info-box">
+        <p><strong>Alumno:</strong> <span id="dev-alumno">--</span></p>
+        <p><strong>Autorizó:</strong> <span id="dev-profesor">--</span></p>
+        <p><strong>Tiempo fuera:</strong> <span id="dev-tiempo" class="highlight-time">--</span></p>
       </div>
 
-      <form id="form-devolucion" onsubmit="confirmarDevolucion(event)" class="space-y-4">
+      <form id="form-devolucion" onsubmit="confirmarDevolucion(event)">
         <input type="hidden" id="dev-id-compu">
 
-        <div>
-          <label class="block text-xs text-slate-300 mb-1">Comentarios / Reporte de Fallas al Devolver</label>
-          <textarea id="input-falla" rows="3" placeholder="Ingresa detalles sobre el estado del equipo al recibirlo (ej: tecla defectuosa, rayón, sin fallas)..." class="w-full bg-slate-900 border border-slate-700 text-sm px-3 py-2 rounded-lg text-slate-100 focus:outline-none focus:border-indigo-500"></textarea>
+        <div class="form-group">
+          <label>Comentarios / Reporte de Fallas al Devolver</label>
+          <textarea id="input-falla" rows="3" placeholder="Detalles sobre el estado del equipo (ej: tecla defectuosa, rayón, sin fallas)..."></textarea>
         </div>
 
-        <div class="flex gap-2 justify-end pt-2">
-          <button type="button" onclick="cerrarModal('modal-devolucion')" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-xs font-semibold">Cancelar</button>
-          <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-xs font-semibold text-white shadow-lg shadow-emerald-600/30">Guardar Devolución</button>
+        <div class="modal-actions">
+          <button type="button" onclick="cerrarModal('modal-devolucion')" class="btn secondary">Cancelar</button>
+          <button type="submit" class="btn success">Guardar Devolución</button>
         </div>
       </form>
     </div>
   </div>
 
   <!-- MODAL: VER CÓDIGO QR -->
-  <div id="modal-qr" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center hidden">
-    <div class="bg-slate-800 border border-slate-700 rounded-xl p-6 w-full max-w-xs text-center shadow-2xl relative">
-      <button onclick="cerrarModal('modal-qr')" class="absolute top-4 right-4 text-slate-400 hover:text-white">
-        <i class="fa-solid fa-xmark text-lg"></i>
-      </button>
+  <div id="modal-qr" class="modal hidden">
+    <div class="modal-content text-center">
+      <button onclick="cerrarModal('modal-qr')" class="close-btn"><i class="fa-solid fa-xmark"></i></button>
 
-      <h3 class="font-bold text-slate-100 mb-1" id="qr-compu-titulo">Compu N° --</h3>
-      <p class="text-xs text-slate-400 mb-4">Código QR estático para etiquetado</p>
+      <h3 id="qr-compu-titulo" class="modal-title-sm">Compu N° --</h3>
+      <p class="modal-subtitle">Código QR estático para etiquetado</p>
 
-      <div class="bg-white p-3 rounded-lg inline-block mx-auto mb-4" id="contenedor-qr"></div>
+      <div class="qr-box" id="contenedor-qr"></div>
 
-      <p class="text-[11px] text-slate-400">Escaneá este código para abrir o auditar la ficha rápida de esta computadora.</p>
+      <p class="modal-footer-text">Escaneá este código para abrir o auditar la ficha rápida de esta computadora.</p>
     </div>
   </div>
 
-  <!-- Script Principal Javascript -->
   <script src="script.js"></script>
 </body>
 </html>
