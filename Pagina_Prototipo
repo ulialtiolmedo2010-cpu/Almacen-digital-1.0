@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Espacio Digital - Control de Computadoras</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- QRCode.js CDN confiable -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- Google Font: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="h-full text-slate-800 flex flex-col antialiased bg-slate-50">
+
+    <!-- Encabezado Principal -->
+    <header class="bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-30 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="p-2 bg-indigo-600 text-white rounded-xl shadow-sm">
+                    <i data-lucide="laptop" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight tracking-wide">Espacio Digital</h1>
+                    <p class="text-xs text-indigo-300">Sistema de Control y Préstamo de Laptops</p>
+                </div>
+            </div>
+            
+            <button onclick="openNewLoanModal()" class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-sm px-4 py-2 rounded-xl transition-all duration-150 shadow-sm active:scale-95">
+                <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                <span>Nuevo Préstamo</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Contenido Principal -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+        <!-- Métricas Rápidas -->
+        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+            <!-- Estadística: Compus Afuera -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Compus Afuera</p>
+                    <p id="stat-active" class="text-3xl font-extrabold text-amber-600 mt-1">0</p>
+                </div>
+                <div class="p-3 bg-amber-50 text-amber-600 rounded-xl">
+                    <i data-lucide="clock" class="w-6 h-6"></i>
+                </div>
+            </div>
+
+            <!-- Estadística: Préstamos de Hoy -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Préstamos Hoy</p>
+                    <p id="stat-today" class="text-3xl font-extrabold text-indigo-600 mt-1">0</p>
+                </div>
+                <div class="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
+                    <i data-lucide="calendar-check" class="w-6 h-6"></i>
+                </div>
+            </div>
+
+            <!-- Estadística: Carrito con más salidas -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Carrito Principal</p>
+                    <p id="stat-top-cart" class="text-lg font-bold text-slate-800 mt-1 truncate max-w-[140px]">--</p>
+                </div>
+                <div class="p-3 bg-blue-50 text-blue-600 rounded-xl">
+                    <i data-lucide="shopping-cart" class="w-6 h-6"></i>
+                </div>
+            </div>
+
+            <!-- Estadística: Total en Sistema -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Histórico</p>
+                    <p id="stat-total" class="text-3xl font-extrabold text-slate-700 mt-1">0</p>
+                </div>
+                <div class="p-3 bg-slate-100 text-slate-600 rounded-xl">
+                    <i data-lucide="layers" class="w-6 h-6"></i>
+                </div>
+            </div>
+        </section>
+
+        <!-- Barra de Búsqueda y Filtros -->
+        <section class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="relative w-full md:w-96">
+                <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                <input type="text" id="search-input" oninput="renderTables()" placeholder="Buscar equipo, alumno, responsable o carrito..." class="w-full pl-9 pr-4 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+
+            <div class="flex items-center space-x-3 w-full md:w-auto justify-end">
+                <select id="filter-cart" onchange="renderTables()" class="text-sm border border-slate-300 rounded-xl px-3 py-2 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="">Todos los carritos</option>
+                    <option value="Carrito A">Carrito A</option>
+                    <option value="Carrito B">Carrito B</option>
+                    <option value="Carrito C">Carrito C</option>
+                    <option value="Carrito Móvil">Carrito Móvil</option>
+                </select>
+
+                <div class="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
+                    <button id="tab-active-btn" onclick="switchTab('active')" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-white text-slate-800 shadow-sm transition-all">Préstamos Activos</button>
+                    <button id="tab-history-btn" onclick="switchTab('history')" class="px-3 py-1.5 text-xs font-medium rounded-lg text-slate-600 hover:text-slate-900 transition-all">Historial / Devoluciones</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tablas de Registros -->
+        <section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <!-- Préstamos Activos -->
+            <div id="view-active-container" class="block">
+                <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                    <h2 class="font-semibold text-slate-800 flex items-center gap-2 text-sm sm:text-base">
+                        <span class="inline-block w-2.5 h-2.5 bg-amber-500 rounded-full animate-pulse"></span>
+                        Computadoras actualmente fuera del carrito
+                    </h2>
+                    <span id="active-badge-count" class="text-xs bg-amber-100 text-amber-800 px-3 py-1 rounded-full font-semibold">0 Activos</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-slate-50 text-slate-500 font-medium text-xs uppercase tracking-wider border-b border-slate-200">
+                            <tr>
+                                <th class="px-6 py-3">Compu / Carrito</th>
+                                <th class="px-6 py-3">Se la lleva</th>
+                                <th class="px-6 py-3">Prestada por</th>
+                                <th class="px-6 py-3">Hora de Salida</th>
+                                <th class="px-6 py-3">Tiempo Afuera (hh:mm:ss)</th>
+                                <th class="px-6 py-3 text-center">Código QR</th>
+                                <th class="px-6 py-3 text-right">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="active-table-body" class="divide-y divide-slate-100">
+                            <!-- JS Inject -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Historial de Devoluciones -->
+            <div id="view-history-container" class="hidden">
+                <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                    <h2 class="font-semibold text-slate-800 flex items-center gap-2 text-sm sm:text-base">
+                        <i data-lucide="history" class="w-4 h-4 text-slate-500"></i>
+                        Historial Completo de Devoluciones
+                    </h2>
+                    <span id="history-badge-count" class="text-xs bg-slate-100 text-slate-600 px-3 py-1 rounded-full font-semibold">0 Devoluciones</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-slate-50 text-slate-500 font-medium text-xs uppercase tracking-wider border-b border-slate-200">
+                            <tr>
+                                <th class="px-6 py-3">Compu / Carrito</th>
+                                <th class="px-6 py-3">Solicitante</th>
+                                <th class="px-6 py-3">Encargado</th>
+                                <th class="px-6 py-3">Salida y Devolución</th>
+                                <th class="px-6 py-3">Tiempo Total Afuera</th>
+                                <th class="px-6 py-3 text-center">Ver QR</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-table-body" class="divide-y divide-slate-100">
+                            <!-- JS Inject -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal: Registrar Préstamo -->
+    <div id="loan-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden border border-slate-100">
+            <div class="px-6 py-4 bg-slate-900 text-white flex justify-between items-center">
+                <h3 class="font-semibold text-base flex items-center gap-2">
+                    <i data-lucide="laptop" class="w-5 h-5 text-indigo-400"></i>
+                    Registrar Préstamo de Equipo
+                </h3>
+                <button onclick="closeNewLoanModal()" class="text-slate-400 hover:text-white transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <form id="loan-form" onsubmit="handleCreateLoan(event)" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Carrito de Origen *</label>
+                    <select id="input-cart" required class="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                        <option value="" disabled selected>Seleccionar Carrito...</option>
+                        <option value="Carrito A">Carrito A</option>
+                        <option value="Carrito B">Carrito B</option>
+                        <option value="Carrito C">Carrito C</option>
+                        <option value="Carrito Móvil">Carrito Móvil</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">ID / Número de Computadora *</label>
+                    <input type="text" id="input-laptop-id" required placeholder="Ej: Laptop-01, N° 15" class="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Persona que se lleva la compu (Solicitante) *</label>
+                    <input type="text" id="input-borrower" required placeholder="Nombre del Alumno, Docente o Curso" class="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Persona que la presta (Encargado/a) *</label>
+                    <input type="text" id="input-lender" required placeholder="Nombre del Administrador del Espacio Digital" class="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Notas / Observaciones</label>
+                    <textarea id="input-notes" rows="2" placeholder="Ej: Incluye cargador, mouse, detalle previo de pantalla..." class="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"></textarea>
+                </div>
+
+                <div class="pt-3 flex gap-3">
+                    <button type="button" onclick="closeNewLoanModal()" class="w-1/2 py-2.5 px-4 border border-slate-300 text-slate-700 font-medium text-sm rounded-xl hover:bg-slate-50 transition-colors">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="w-1/2 py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-sm rounded-xl shadow-sm transition-all">
+                        Registrar Salida
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Generador e Información de QR -->
+    <div id="qr-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full overflow-hidden border border-slate-100 text-center">
+            <div class="p-4 bg-slate-900 text-white flex justify-between items-center">
+                <span class="text-xs font-bold uppercase tracking-widest text-indigo-400">Ficha Digital y Código QR</span>
+                <button onclick="closeQrModal()" class="text-slate-400 hover:text-white transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="p-6 space-y-4">
+                <!-- Contenedor donde se genera el código QR -->
+                <div class="flex justify-center my-2">
+                    <div id="qrcode-box" class="p-3 bg-white border-2 border-dashed border-indigo-200 rounded-2xl shadow-inner inline-block min-w-[176px] min-h-[176px]"></div>
+                </div>
+
+                <!-- Badge de Estado -->
+                <div id="qr-modal-status-badge" class="inline-block px-3 py-1 rounded-full text-xs font-semibold">
+                    --
+                </div>
+
+                <!-- Ficha en texto explicativo -->
+                <div class="text-left text-xs space-y-2 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <div class="flex justify-between border-b border-slate-200 pb-1">
+                        <span class="text-slate-500">Equipo:</span>
+                        <span id="qr-modal-laptop" class="font-bold text-slate-800">--</span>
+                    </div>
+                    <div class="flex justify-between border-b border-slate-200 pb-1">
+                        <span class="text-slate-500">Carrito Origen:</span>
+                        <span id="qr-modal-cart" class="font-medium text-slate-700">--</span>
+                    </div>
+                    <div class="flex justify-between border-b border-slate-200 pb-1">
+                        <span class="text-slate-500">Solicitante:</span>
+                        <span id="qr-modal-borrower" class="font-semibold text-slate-800">--</span>
+                    </div>
+                    <div class="flex justify-between border-b border-slate-200 pb-1">
+                        <span class="text-slate-500">Prestada por:</span>
+                        <span id="qr-modal-lender" class="text-slate-700">--</span>
+                    </div>
+                    <div class="flex justify-between border-b border-slate-200 pb-1">
+                        <span class="text-slate-500">Hora Salida:</span>
+                        <span id="qr-modal-time-out" class="text-slate-700">--</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-500">Tiempo Transcurrido:</span>
+                        <span id="qr-modal-duration" class="font-bold text-indigo-600">--</span>
+                    </div>
+                </div>
+
+                <div class="flex gap-2">
+                    <button onclick="closeQrModal()" class="w-full py-2.5 bg-slate-800 text-white text-sm font-medium rounded-xl hover:bg-slate-700 transition-colors">
+                        Cerrar Ficha
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script de Lógica Principal -->
+    <script>
+        const STORAGE_KEY = 'espacio_digital_loans_v3';
+
+        // Datos de ejemplo para primera carga
+        const INITIAL_DATA = [
+            {
+                id: 'loan_101',
+                laptopId: 'COMPU-04',
+                cart: 'Carrito A',
+                borrower: 'Carlos Gómez (Docente)',
+                lender: 'María (Administradora)',
+                notes: 'Incluye cargador y mouse USB',
+                startTime: new Date(Date.now() - (45 * 60 * 1000 + 12 * 1000)).toISOString(),
+                endTime: null,
+                status: 'active'
+            },
+            {
+                id: 'loan_102',
+                laptopId: 'COMPU-12',
+                cart: 'Carrito B',
+                borrower: 'Laura Martínez (6º Año)',
+                lender: 'Martín (Encargado)',
+                notes: '',
+                startTime: new Date(Date.now() - (120 * 60 * 1000)).toISOString(),
+                endTime: new Date(Date.now() - (15 * 60 * 1000)).toISOString(),
+                status: 'returned'
+            }
+        ];
+
+        let loans = [];
+        let activeTab = 'active';
+
+        // Inicialización al cargar la ventana
+        window.addEventListener('DOMContentLoaded', () => {
+            loadLoans();
+            lucide.createIcons();
+            renderTables();
+            updateDashboard();
+
+            // Actualización dinámica del contador cada segundo
+            setInterval(() => {
+                if (activeTab === 'active') {
+                    updateLiveTimers();
+                }
+            }, 1000);
+        });
+
+        function loadLoans() {
+            const data = localStorage.getItem(STORAGE_KEY);
+            if (data) {
+                try {
+                    loans = JSON.parse(data);
+                } catch (e) {
+                    loans = INITIAL_DATA;
+                }
+            } else {
+                loans = INITIAL_DATA;
+                saveLoans();
+            }
+        }
+
+        function saveLoans() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(loans));
+            updateDashboard();
+        }
+
+        function switchTab(tab) {
+            activeTab = tab;
+            const activeBtn = document.getElementById('tab-active-btn');
+            const historyBtn = document.getElementById('tab-history-btn');
+            const activeContainer = document.getElementById('view-active-container');
+            const historyContainer = document.getElementById('view-history-container');
+
+            if (tab === 'active') {
+                activeBtn.className = 'px-3 py-1.5 text-xs font-medium rounded-lg bg-white text-slate-800 shadow-sm transition-all';
+                historyBtn.className = 'px-3 py-1.5 text-xs font-medium rounded-lg text-slate-600 hover:text-slate-900 transition-all';
+                activeContainer.classList.remove('hidden');
+                historyContainer.classList.add('hidden');
+            } else {
+                historyBtn.className = 'px-3 py-1.5 text-xs font-medium rounded-lg bg-white text-slate-800 shadow-sm transition-all';
+                activeBtn.className = 'px-3 py-1.5 text-xs font-medium rounded-lg text-slate-600 hover:text-slate-900 transition-all';
+                historyContainer.classList.remove('hidden');
+                activeContainer.classList.add('hidden');
+            }
+            renderTables();
+        }
+
+        // Calcula la diferencia en horas, minutos y segundos exactos (hh:mm:ss)
+        function formatExactDuration(startIso, endIso = null) {
+            const start = new Date(startIso);
+            const end = endIso ? new Date(endIso) : new Date();
+            const diffMs = end - start;
+
+            if (diffMs < 0) return '00:00:00';
+
+            const totalSeconds = Math.floor(diffMs / 1000);
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
+
+            const pad = (n) => String(n).padStart(2, '0');
+            return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+        }
+
+        function formatDateTime(isoString) {
+            if (!isoString) return '--';
+            const date = new Date(isoString);
+            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + 
+                   ' (' + date.toLocaleDateString([], { day: '2-digit', month: '2-digit' }) + ')';
+        }
+
+        function updateDashboard() {
+            const activeCount = loans.filter(l => l.status === 'active').length;
+            
+            const todayStr = new Date().toDateString();
+            const todayLoansCount = loans.filter(l => new Date(l.startTime).toDateString() === todayStr).length;
+
+            const cartCounts = {};
+            loans.forEach(l => {
+                cartCounts[l.cart] = (cartCounts[l.cart] || 0) + 1;
+            });
+            let topCart = '--';
+            let maxCount = 0;
+            for (const [cart, count] of Object.entries(cartCounts)) {
+                if (count > maxCount) {
+                    maxCount = count;
+                    topCart = cart;
+                }
+            }
+
+            document.getElementById('stat-active').innerText = activeCount;
+            document.getElementById('stat-today').innerText = todayLoansCount;
+            document.getElementById('stat-top-cart').innerText = topCart;
+            document.getElementById('stat-total').innerText = loans.length;
+
+            document.getElementById('active-badge-count').innerText = `${activeCount} Activos`;
+            document.getElementById('history-badge-count').innerText = `${loans.filter(l => l.status === 'returned').length} Devoluciones`;
+        }
+
+        function updateLiveTimers() {
+            const timerElements = document.querySelectorAll('.live-timer');
+            timerElements.forEach(el => {
+                const startTime = el.getAttribute('data-start');
+                if (startTime) {
+                    el.innerText = formatExactDuration(startTime);
+                }
+            });
+        }
+
+        function renderTables() {
+            const searchVal = document.getElementById('search-input').value.toLowerCase().trim();
+            const cartFilterVal = document.getElementById('filter-cart').value;
+
+            const filtered = loans.filter(item => {
+                const matchesCart = cartFilterVal === '' || item.cart === cartFilterVal;
+                const matchesSearch = item.laptopId.toLowerCase().includes(searchVal) ||
+                                      item.borrower.toLowerCase().includes(searchVal) ||
+                                      item.lender.toLowerCase().includes(searchVal) ||
+                                      item.cart.toLowerCase().includes(searchVal);
+                return matchesCart && matchesSearch;
+            });
+
+            if (activeTab === 'active') {
+                renderActiveTable(filtered.filter(l => l.status === 'active'));
+            } else {
+                renderHistoryTable(filtered.filter(l => l.status === 'returned'));
+            }
+
+            lucide.createIcons();
+        }
+
+        function renderActiveTable(activeLoans) {
+            const tbody = document.getElementById('active-table-body');
+            tbody.innerHTML = '';
+
+            if (activeLoans.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="text-center py-8 text-slate-400">
+                            <i data-lucide="check-circle" class="w-8 h-8 mx-auto mb-2 text-slate-300"></i>
+                            Todas las computadoras están guardadas en sus carritos.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            activeLoans.forEach(loan => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition-colors";
+                tr.innerHTML = `
+                    <td class="px-6 py-4">
+                        <div class="font-bold text-slate-800 flex items-center gap-1.5">
+                            <i data-lucide="laptop" class="w-4 h-4 text-indigo-600"></i>
+                            ${loan.laptopId}
+                        </div>
+                        <div class="text-xs text-slate-500">${loan.cart}</div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="font-medium text-slate-800">${loan.borrower}</div>
+                        ${loan.notes ? `<div class="text-xs text-slate-400 italic">${loan.notes}</div>` : ''}
+                    </td>
+                    <td class="px-6 py-4 text-slate-600">${loan.lender}</td>
+                    <td class="px-6 py-4 text-slate-600 text-xs">${formatDateTime(loan.startTime)}</td>
+                    <td class="px-6 py-4">
+                        <span class="inline-flex items-center gap-1 text-xs font-mono font-bold px-2.5 py-1 rounded-full bg-amber-100 text-amber-900 border border-amber-200">
+                            <i data-lucide="clock" class="w-3 h-3 text-amber-600"></i>
+                            <span class="live-timer" data-start="${loan.startTime}">${formatExactDuration(loan.startTime)}</span>
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                        <button onclick="openQrModal('${loan.id}')" class="p-2 text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-colors" title="Generar / Ver QR">
+                            <i data-lucide="qr-code" class="w-5 h-5"></i>
+                        </button>
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                        <button onclick="returnLaptop('${loan.id}')" class="inline-flex items-center gap-1 text-xs bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-xl font-medium transition-all shadow-sm">
+                            <i data-lucide="corner-down-left" class="w-3.5 h-3.5"></i>
+                            Devolver
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderHistoryTable(historyLoans) {
+            const tbody = document.getElementById('history-table-body');
+            tbody.innerHTML = '';
+
+            if (historyLoans.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="text-center py-8 text-slate-400">
+                            <i data-lucide="folder-open" class="w-8 h-8 mx-auto mb-2 text-slate-300"></i>
+                            No hay registros guardados en el historial.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            historyLoans.forEach(loan => {
+                const totalDuration = formatExactDuration(loan.startTime, loan.endTime);
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition-colors";
+                tr.innerHTML = `
+                    <td class="px-6 py-4">
+                        <div class="font-bold text-slate-800 flex items-center gap-1.5">
+                            <i data-lucide="laptop" class="w-4 h-4 text-slate-400"></i>
+                            ${loan.laptopId}
+                        </div>
+                        <div class="text-xs text-slate-500">${loan.cart}</div>
+                    </td>
+                    <td class="px-6 py-4 font-medium text-slate-800">${loan.borrower}</td>
+                    <td class="px-6 py-4 text-slate-600">${loan.lender}</td>
+                    <td class="px-6 py-4 text-slate-500 text-xs space-y-0.5">
+                        <div><strong class="text-slate-600">Salida:</strong> ${formatDateTime(loan.startTime)}</div>
+                        <div><strong class="text-slate-600">Devolución:</strong> ${formatDateTime(loan.endTime)}</div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="inline-flex items-center gap-1 text-xs font-mono font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                            ${totalDuration}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                        <button onclick="openQrModal('${loan.id}')" class="p-2 text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-colors" title="Ver Ficha QR">
+                            <i data-lucide="qr-code" class="w-5 h-5"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function handleCreateLoan(e) {
+            e.preventDefault();
+
+            const laptopId = document.getElementById('input-laptop-id').value.trim();
+            const cart = document.getElementById('input-cart').value;
+            const borrower = document.getElementById('input-borrower').value.trim();
+            const lender = document.getElementById('input-lender').value.trim();
+            const notes = document.getElementById('input-notes').value.trim();
+
+            const newLoan = {
+                id: 'loan_' + Date.now(),
+                laptopId,
+                cart,
+                borrower,
+                lender,
+                notes,
+                startTime: new Date().toISOString(),
+                endTime: null,
+                status: 'active'
+            };
+
+            loans.unshift(newLoan);
+            saveLoans();
+            renderTables();
+            closeNewLoanModal();
+
+            document.getElementById('loan-form').reset();
+        }
+
+        function returnLaptop(loanId) {
+            const loanIndex = loans.findIndex(l => l.id === loanId);
+            if (loanIndex !== -1) {
+                loans[loanIndex].status = 'returned';
+                loans[loanIndex].endTime = new Date().toISOString();
+                saveLoans();
+                renderTables();
+            }
+        }
+
+        function openNewLoanModal() {
+            document.getElementById('loan-modal').classList.remove('hidden');
+        }
+
+        function closeNewLoanModal() {
+            document.getElementById('loan-modal').classList.add('hidden');
+        }
+
+        function openQrModal(loanId) {
+            const loan = loans.find(l => l.id === loanId);
+            if (!loan) return;
+
+            const isReturned = loan.status === 'returned';
+            const duration = formatExactDuration(loan.startTime, loan.endTime);
+
+            document.getElementById('qr-modal-laptop').innerText = loan.laptopId;
+            document.getElementById('qr-modal-cart').innerText = loan.cart;
+            document.getElementById('qr-modal-borrower').innerText = loan.borrower;
+            document.getElementById('qr-modal-lender').innerText = loan.lender;
+            document.getElementById('qr-modal-time-out').innerText = formatDateTime(loan.startTime);
+            document.getElementById('qr-modal-duration').innerText = duration + (isReturned ? ' (Total)' : ' (En vivo)');
+
+            const badge = document.getElementById('qr-modal-status-badge');
+            if (isReturned) {
+                badge.className = "inline-block px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200";
+                badge.innerText = "Estado: Devuelto a Carrito";
+            } else {
+                badge.className = "inline-block px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200";
+                badge.innerText = "Estado: En Préstamo Activo";
+            }
+
+            // Datos estructurados en texto plano para el Código QR
+            const qrPayload = `ESPACIO DIGITAL - PRÉSTAMO
+-----------------------------
+Equipo: ${loan.laptopId}
+Carrito: ${loan.cart}
+Solicitante: ${loan.borrower}
+Prestado Por: ${loan.lender}
+Hora Salida: ${formatDateTime(loan.startTime)}
+Estado: ${isReturned ? 'Devuelto' : 'Activo'}`;
+
+            const qrBox = document.getElementById('qrcode-box');
+            qrBox.innerHTML = ''; // Limpiar contenedor previo
+
+            // Generación limpia del código QR mediante la librería
+            try {
+                new QRCode(qrBox, {
+                    text: qrPayload,
+                    width: 150,
+                    height: 150,
+                    colorDark : "#0f172a",
+                    colorLight : "#ffffff",
+                    correctLevel : QRCode.CorrectLevel.M
+                });
+            } catch (err) {
+                console.error('Error generando QR:', err);
+                qrBox.innerHTML = '<span class="text-xs text-red-500">Error cargando el generador QR</span>';
+            }
+
+            document.getElementById('qr-modal').classList.remove('hidden');
+        }
+
+        function closeQrModal() {
+            document.getElementById('qr-modal').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
