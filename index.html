@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestión de Carrito - Espacio Digital</title>
+  
+  <!-- FontAwesome para iconos -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- QRCode.js para generar códigos QR -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <!-- CSS Propiamente Local -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Header / Navbar -->
+  <header class="header">
+    <div class="header-content">
+      <div class="brand">
+        <div class="brand-icon">
+          <i class="fa-solid fa-laptop-house"></i>
+        </div>
+        <div>
+          <h1>Espacio Digital</h1>
+          <p>Control e Inventario del Carrito Único</p>
+        </div>
+      </div>
+
+      <!-- Resumen rápido de métricas -->
+      <div class="metrics">
+        <div class="metric-badge">
+          <span class="dot emerald"></span>
+          <span>Disponibles:</span>
+          <strong id="stat-disponibles">0</strong>
+        </div>
+        <div class="metric-badge">
+          <span class="dot rose"></span>
+          <span>En préstamo:</span>
+          <strong id="stat-prestadas">0</strong>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Contenido Principal -->
+  <main class="main-container">
+    
+    <!-- Botón Volver (Solo visible en la vista de detalle) -->
+    <div id="btn-volver-container" class="hidden">
+      <button onclick="volverACarritos()" class="btn secondary">
+        <i class="fa-solid fa-arrow-left"></i> Volver a Carritos
+      </button>
+    </div>
+
+    <!-- Sección Matriz del Carrito -->
+    <section class="section">
+      <div class="section-header">
+        <div>
+          <h2 id="titulo-seccion"><i class="fa-solid fa-boxes-stacked"></i> Selección de Carrito</h2>
+          <p id="subtitulo-seccion">Haz clic en un carrito para ver las computadoras almacenadas.</p>
+        </div>
+        
+        <!-- Buscador (Solo se muestra dentro del carrito) -->
+        <div class="search-box hidden" id="search-box-container">
+          <input type="text" id="input-busqueda" placeholder="Buscar por número o alumno...">
+        </div>
+      </div>
+
+      <!-- Grid de Tarjetas -->
+      <div id="grid-carrito" class="grid-carrito">
+        <!-- Generado dinámicamente -->
+      </div>
+    </section>
+
+    <!-- Sección Historial de Devoluciones -->
+    <section class="section history-section">
+      <div class="section-header">
+        <h3><i class="fa-solid fa-clock-rotate-left"></i> Historial de Devoluciones y Registro</h3>
+        <span id="historial-count" class="count-tag">0 registros</span>
+      </div>
+
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>Compu</th>
+              <th>Alumno</th>
+              <th>Autorizó</th>
+              <th>Horario</th>
+              <th>Tiempo Total</th>
+              <th>Obs. / Fallas</th>
+            </tr>
+          </thead>
+          <tbody id="tabla-historial">
+            <!-- Filas dinámicas -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- MODAL: REGISTRAR PRÉSTAMO -->
+  <div id="modal-prestamo" class="modal hidden">
+    <div class="modal-content">
+      <button type="button" onclick="cerrarModal('modal-prestamo')" class="close-btn"><i class="fa-solid fa-xmark"></i></button>
+      
+      <div class="modal-header">
+        <div class="modal-icon emerald-bg"><i class="fa-solid fa-hand-holding-hand"></i></div>
+        <div>
+          <h3>Registrar Salida</h3>
+          <p id="modal-prestamo-titulo">Compu N° --</p>
+        </div>
+      </div>
+
+      <form id="form-prestamo" onsubmit="confirmarPrestamo(event)">
+        <input type="hidden" id="prestamo-id-compu">
+        
+        <div class="form-group">
+          <label>Alumno / Persona que se la lleva</label>
+          <input type="text" id="input-alumno" required placeholder="Ej: Ramiro Gil">
+        </div>
+
+        <div class="form-group">
+          <label>Profesor / Preceptor que la autoriza</label>
+          <input type="text" id="input-profesor" required placeholder="Ej: Prof. García">
+        </div>
+
+        <div class="form-group">
+          <label>Observación inicial (Opcional)</label>
+          <input type="text" id="input-obs-salida" placeholder="Ej: Detalles de batería, sin mouse...">
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" onclick="cerrarModal('modal-prestamo')" class="btn secondary">Cancelar</button>
+          <button type="submit" class="btn primary">Confirmar Préstamo</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: REGISTRAR DEVOLUCIÓN -->
+  <div id="modal-devolucion" class="modal hidden">
+    <div class="modal-content">
+      <button type="button" onclick="cerrarModal('modal-devolucion')" class="close-btn"><i class="fa-solid fa-xmark"></i></button>
+
+      <div class="modal-header">
+        <div class="modal-icon indigo-bg"><i class="fa-solid fa-arrow-rotate-left"></i></div>
+        <div>
+          <h3>Registrar Devolución</h3>
+          <p id="modal-devolucion-titulo">Compu N° --</p>
+        </div>
+      </div>
+
+      <div class="modal-info-box">
+        <p><strong>Alumno:</strong> <span id="dev-alumno">--</span></p>
+        <p><strong>Autorizó:</strong> <span id="dev-profesor">--</span></p>
+        <p><strong>Tiempo fuera:</strong> <span id="dev-tiempo" class="highlight-time">--</span></p>
+      </div>
+
+      <form id="form-devolucion" onsubmit="confirmarDevolucion(event)">
+        <input type="hidden" id="dev-id-compu">
+
+        <div class="form-group">
+          <label>Comentarios / Reporte de Fallas al Devolver</label>
+          <textarea id="input-falla" rows="3" placeholder="Detalles sobre el estado del equipo (ej: tecla defectuosa, rayón, sin fallas)..."></textarea>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" onclick="cerrarModal('modal-devolucion')" class="btn secondary">Cancelar</button>
+          <button type="submit" class="btn success">Guardar Devolución</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: VER CÓDIGO QR -->
+  <div id="modal-qr" class="modal hidden">
+    <div class="modal-content text-center">
+      <button type="button" onclick="cerrarModal('modal-qr')" class="close-btn"><i class="fa-solid fa-xmark"></i></button>
+
+      <h3 id="qr-compu-titulo" class="modal-title-sm">Compu N° --</h3>
+      <p class="modal-subtitle">Código QR estático para etiquetado</p>
+
+      <div class="qr-box" id="contenedor-qr"></div>
+
+      <p class="modal-footer-text">Escaneá este código para abrir o auditar la ficha rápida de esta computadora.</p>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
