@@ -54,6 +54,8 @@ body {
   font-weight: bold;
   background: linear-gradient(to right, #818cf8, #22d3ee);
   -webkit-background-clip: text;
+background-clip: text;
+-webkit-text-fill-color: transparent;
   -webkit-text-fill-color: transparent;
 }
 
