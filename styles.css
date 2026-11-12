@@ -485,7 +485,7 @@ button { cursor: pointer; }
   text-align: center;
 }
 
-.btn-card { width: 100%; min-height: 2.55rem; margin-top: auto; }
+.btn-card { width: 100%; min-height: 2.55rem; margin-top: auto; border-radius: 5px;}
 
 .empty {
   grid-column: 1 / -1;
