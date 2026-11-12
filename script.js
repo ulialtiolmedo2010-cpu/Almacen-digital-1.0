@@ -2,6 +2,14 @@ const TOTAL_COMPUTADORAS = 30;
 let computadoras = [];
 let historialDevoluciones = [];
 let vistaActual = 'inicio'; // 'inicio' o 'detalle'
+let filtroEstado = 'todas'; // 'todas' | 'disponible' | 'prestada'
+
+// Evita que un nombre con símbolos rompa la página
+function esc(texto) {
+  return String(texto ?? '').replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
+}
 
 document.addEventListener("DOMContentLoaded", () => {
   cargarDatosLocalStorage();
@@ -14,6 +22,18 @@ document.addEventListener("DOMContentLoaded", () => {
     if (vistaActual === 'detalle') {
       renderizarMatriz(e.target.value.toLowerCase());
     }
+  });
+
+  // Cerrar ventanas con Escape o tocando fuera
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      document.querySelectorAll(".modal:not(.hidden)").forEach(m => m.classList.add("hidden"));
+    }
+  });
+  document.querySelectorAll(".modal").forEach(m => {
+    m.addEventListener("click", (e) => {
+      if (e.target === m) m.classList.add("hidden");
+    });
   });
 });
 
@@ -59,52 +79,50 @@ function renderizar() {
   }
 }
 
-// Vista inicial: Muestra la tarjeta de Carrito 1 con opciones de Abrir, Prestar Carrito y Devolver Carrito
+// Vista inicial: tarjeta del Carrito 1 con Abrir, Prestar todo y Devolver todo
 function renderizarVistaInicio() {
   const grid = document.getElementById("grid-carrito");
   grid.innerHTML = '';
+  grid.classList.add("is-home");
 
   document.getElementById("btn-volver-container").classList.add("hidden");
   document.getElementById("search-box-container").classList.add("hidden");
+  document.getElementById("filtros-container").classList.add("hidden");
 
-  document.getElementById("titulo-seccion").innerHTML = `<i class="fa-solid fa-boxes-stacked"></i> Selección de Carrito`;
-  document.getElementById("subtitulo-seccion").innerText = "Haz clic en Abrir para ver las computadoras o gestiona el préstamo/devolución completa.";
+  document.getElementById("titulo-seccion").innerHTML = `<i class="fa-solid fa-boxes-stacked" aria-hidden="true"></i> Selección de carrito`;
+  document.getElementById("subtitulo-seccion").innerText = "Abrí el carrito para ver cada computadora, o prestá y devolvé todo junto.";
 
   const disponiblesCount = computadoras.filter(c => c.estado === 'disponible').length;
   const prestadasCount = computadoras.filter(c => c.estado === 'prestada').length;
+  const porcentaje = Math.round((disponiblesCount / TOTAL_COMPUTADORAS) * 100);
 
-  const cardCarrito = document.createElement("div");
-  cardCarrito.className = "card-compu card-disponible";
-  cardCarrito.style.padding = "1.5rem";
+  const cardCarrito = document.createElement("article");
+  cardCarrito.className = "cart-card";
 
   cardCarrito.innerHTML = `
-    <div class="card-top">
-      <span class="badge-num disponible">
-        Carrito N° 1
-      </span>
-      <span style="font-size: 0.75rem; color: #94a3b8;">${TOTAL_COMPUTADORAS} Computadoras</span>
-    </div>
-
-    <div class="card-body-disponible" onclick="abrirCarrito1()" style="cursor: pointer;">
-      <i class="fa-solid fa-laptop-house" style="font-size: 2.5rem; color: #818cf8; margin-bottom: 0.5rem;"></i>
-      <p style="font-size: 0.85rem; font-weight: bold; color: #f8fafc;">Carrito Principal</p>
-      <p style="font-size: 0.75rem; color: #94a3b8; margin-top: 0.25rem;">
-        ${disponiblesCount} disponibles - ${prestadasCount} prestadas
-      </p>
-    </div>
-
-    <div style="display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.5rem;">
-      <button type="button" onclick="abrirCarrito1()" class="btn-card btn-prestar" style="background-color: #4f46e5;">
-        <i class="fa-solid fa-folder-open"></i> Abrir
-      </button>
-      <div style="display: flex; gap: 0.4rem;">
-        <button type="button" onclick="prestarCarritoCompleto()" class="btn-card btn-prestar" ${disponiblesCount === 0 ? 'disabled style="opacity:0.5;"' : ''}>
-          <i class="fa-solid fa-hand-holding"></i> Prestar Carrito
-        </button>
-        <button type="button" onclick="abrirModalDevolucionCarrito()" class="btn-card btn-devolver" ${prestadasCount === 0 ? 'disabled style="opacity:0.5;"' : ''}>
-          <i class="fa-solid fa-arrow-rotate-left"></i> Devolver Carrito
-        </button>
+    <div class="cart-head">
+      <div class="cart-icon" aria-hidden="true"><i class="fa-solid fa-laptop-house"></i></div>
+      <div>
+        <h3>Carrito principal</h3>
+        <p>Carrito N° 1, ${TOTAL_COMPUTADORAS} computadoras</p>
       </div>
+    </div>
+
+    <div class="cart-meter">
+      <div class="cart-meter-bar" role="img" aria-label="${disponiblesCount} de ${TOTAL_COMPUTADORAS} disponibles" style="--p: ${porcentaje}%"><span></span></div>
+      <p><strong>${disponiblesCount}</strong> disponibles y <strong>${prestadasCount}</strong> prestadas</p>
+    </div>
+
+    <div class="cart-actions">
+      <button type="button" onclick="abrirCarrito1()" class="btn primary">
+        <i class="fa-solid fa-folder-open" aria-hidden="true"></i> Ver computadoras
+      </button>
+      <button type="button" onclick="prestarCarritoCompleto()" class="btn success" ${disponiblesCount === 0 ? 'disabled' : ''}>
+        <i class="fa-solid fa-hand-holding" aria-hidden="true"></i> Prestar todo el carrito
+      </button>
+      <button type="button" onclick="abrirModalDevolucionCarrito()" class="btn warn" ${prestadasCount === 0 ? 'disabled' : ''}>
+        <i class="fa-solid fa-arrow-rotate-left" aria-hidden="true"></i> Devolver todo el carrito
+      </button>
     </div>
   `;
 
@@ -120,12 +138,13 @@ function prestarCarritoCompleto() {
   }
 
   document.getElementById("prestamo-id-compu").value = "carrito_completo";
-  document.getElementById("modal-prestamo-titulo").innerText = `Carrito N° 1 (${disponibles.length} compus disponibles)`;
+  document.getElementById("modal-prestamo-titulo").innerText = `Carrito N° 1, ${disponibles.length} compus disponibles`;
   document.getElementById("input-alumno").value = '';
   document.getElementById("input-profesor").value = '';
   document.getElementById("input-obs-salida").value = 'Préstamo completo de Carrito 1';
 
   document.getElementById("modal-prestamo").classList.remove("hidden");
+  document.getElementById("input-alumno").focus();
 }
 
 // Abre el modal de devolución para el carrito completo
@@ -137,7 +156,7 @@ function abrirModalDevolucionCarrito() {
   }
 
   document.getElementById("dev-id-compu").value = "carrito_completo";
-  document.getElementById("modal-devolucion-titulo").innerText = `Devolver Carrito N° 1 (${prestadas.length} compus fuera)`;
+  document.getElementById("modal-devolucion-titulo").innerText = `Carrito N° 1, ${prestadas.length} compus fuera`;
   document.getElementById("dev-alumno").innerText = "Préstamo grupal / Múltiples alumnos";
   document.getElementById("dev-profesor").innerText = prestadas[0].profesor || "Profesor a cargo";
   document.getElementById("dev-tiempo").innerText = "Múltiples tiempos de salida";
@@ -153,64 +172,80 @@ function abrirCarrito1() {
 
 function volverACarritos() {
   vistaActual = 'inicio';
+  filtroEstado = 'todas';
   document.getElementById("input-busqueda").value = '';
   renderizar();
 }
 
-// Vista detallada: Muestra las 30 computadoras
+function cambiarFiltro(valor) {
+  filtroEstado = valor;
+  renderizar();
+}
+
+// Vista detallada: muestra las computadoras del carrito
 function renderizarMatriz(filtro = '') {
   const grid = document.getElementById("grid-carrito");
   grid.innerHTML = '';
+  grid.classList.remove("is-home");
 
   document.getElementById("btn-volver-container").classList.remove("hidden");
   document.getElementById("search-box-container").classList.remove("hidden");
+  document.getElementById("filtros-container").classList.remove("hidden");
 
-  document.getElementById("titulo-seccion").innerHTML = `<i class="fa-solid fa-laptop"></i> Estado de Computadoras (Carrito 1)`;
-  document.getElementById("subtitulo-seccion").innerText = "Selecciona una computadora verde para prestar o una roja para gestionar su devolución.";
+  document.querySelectorAll("#filtros-container .chip").forEach(chip => {
+    const activo = chip.dataset.filtro === filtroEstado;
+    chip.classList.toggle("is-active", activo);
+    chip.setAttribute("aria-pressed", activo);
+  });
+
+  document.getElementById("titulo-seccion").innerHTML = `<i class="fa-solid fa-laptop" aria-hidden="true"></i> Computadoras del carrito 1`;
+  document.getElementById("subtitulo-seccion").innerText = "Prestá las disponibles o registrá la devolución de las que están afuera.";
+
+  let mostradas = 0;
 
   computadoras.forEach(compu => {
     const textoBuscado = `${compu.numero} ${compu.alumno} ${compu.profesor}`.toLowerCase();
     if (filtro && !textoBuscado.includes(filtro)) return;
+    if (filtroEstado !== 'todas' && compu.estado !== filtroEstado) return;
 
+    mostradas++;
     const esPrestada = compu.estado === 'prestada';
-    
+
     const card = document.createElement("div");
     card.className = `card-compu ${esPrestada ? 'card-prestada' : 'card-disponible'}`;
 
     card.innerHTML = `
       <div class="card-top">
-        <span class="badge-num ${esPrestada ? 'prestada' : 'disponible'}">
-          Compu ${compu.numero}
-        </span>
-        <button type="button" onclick="abrirModalQR('${compu.numero}')" class="qr-btn" title="Ver Código QR">
-          <i class="fa-solid fa-qrcode"></i>
+        <div class="card-num"><small>Compu</small>${compu.numero}</div>
+        <button type="button" onclick="abrirModalQR('${compu.numero}')" class="qr-btn" title="Ver código QR" aria-label="Ver código QR de la compu ${compu.numero}">
+          <i class="fa-solid fa-qrcode" aria-hidden="true"></i>
         </button>
       </div>
 
       ${esPrestada ? `
+        <span class="estado out"><i class="fa-solid fa-arrow-right-from-bracket" aria-hidden="true"></i> Prestada</span>
         <div class="card-body-prestada">
-          <p><i class="fa-solid fa-user text-rose-400"></i> ${compu.alumno}</p>
-          <p><i class="fa-solid fa-user-tie"></i> ${compu.profesor}</p>
-          <div class="timer" id="timer-${compu.id}">
-            ${calcularTiempoTranscurrido(compu.horaSalida)}
-          </div>
+          <p title="${esc(compu.alumno)}"><i class="fa-solid fa-user" aria-hidden="true"></i> ${esc(compu.alumno)}</p>
+          <p title="${esc(compu.profesor)}"><i class="fa-solid fa-user-tie" aria-hidden="true"></i> ${esc(compu.profesor)}</p>
+          <div class="timer" id="timer-${compu.id}">${calcularTiempoTranscurrido(compu.horaSalida)}</div>
         </div>
-        <button type="button" onclick="abrirModalDevolucion(${compu.id})" class="btn-card btn-devolver">
-          <i class="fa-solid fa-arrow-rotate-left"></i> Devolver
+        <button type="button" onclick="abrirModalDevolucion(${compu.id})" class="btn warn btn-card">
+          <i class="fa-solid fa-arrow-rotate-left" aria-hidden="true"></i> Devolver
         </button>
       ` : `
-        <div class="card-body-disponible">
-          <i class="fa-solid fa-laptop"></i>
-          <p>Guardada en carrito</p>
-        </div>
-        <button type="button" onclick="abrirModalPrestamo(${compu.id})" class="btn-card btn-prestar">
-          <i class="fa-solid fa-hand-holding"></i> Prestar
+        <span class="estado ok"><i class="fa-solid fa-circle-check" aria-hidden="true"></i> Disponible</span>
+        <button type="button" onclick="abrirModalPrestamo(${compu.id})" class="btn success btn-card">
+          <i class="fa-solid fa-hand-holding" aria-hidden="true"></i> Prestar
         </button>
       `}
     `;
 
     grid.appendChild(card);
   });
+
+  if (mostradas === 0) {
+    grid.innerHTML = `<p class="empty">No hay computadoras que coincidan con la búsqueda o el filtro.</p>`;
+  }
 }
 
 function actualizarMetricas() {
@@ -256,6 +291,7 @@ function abrirModalPrestamo(id) {
   document.getElementById("input-obs-salida").value = '';
 
   document.getElementById("modal-prestamo").classList.remove("hidden");
+  document.getElementById("input-alumno").focus();
 }
 
 function confirmarPrestamo(e) {
@@ -305,6 +341,7 @@ function abrirModalDevolucion(id) {
   document.getElementById("input-falla").value = '';
 
   document.getElementById("modal-devolucion").classList.remove("hidden");
+  document.getElementById("input-falla").focus();
 }
 
 function confirmarDevolucion(e) {
@@ -366,10 +403,10 @@ function renderizarHistorial() {
   const tbody = document.getElementById("tabla-historial");
   tbody.innerHTML = '';
 
-  document.getElementById("historial-count").innerText = `${historialDevoluciones.length} registros`;
+  document.getElementById("historial-count").innerText = `${historialDevoluciones.length} ${historialDevoluciones.length === 1 ? 'registro' : 'registros'}`;
 
   if (historialDevoluciones.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #64748b; padding: 1rem;">No hay devoluciones registradas aún.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" class="vacio">Todavía no hay devoluciones registradas.</td></tr>`;
     return;
   }
 
@@ -378,15 +415,15 @@ function renderizarHistorial() {
     const tieneFalla = item.falla && item.falla !== 'Sin novedades' && item.falla !== 'Devolución completa de carrito';
 
     tr.innerHTML = `
-      <td><strong>Compu ${item.numeroCompu}</strong></td>
-      <td>${item.alumno}</td>
-      <td style="color: #94a3b8;">${item.profesor}</td>
-      <td style="color: #94a3b8;">${item.fechaHora}</td>
-      <td style="font-family: monospace; color: #fbbf24;">${item.tiempoTotal}</td>
-      <td>
-        ${tieneFalla 
-          ? `<span class="falla-badge"><i class="fa-solid fa-triangle-exclamation"></i> ${item.falla}</span>` 
-          : `<span class="sin-fallas">${item.falla || 'Sin fallas'}</span>`}
+      <td data-label="Compu"><strong>Compu ${esc(item.numeroCompu)}</strong></td>
+      <td data-label="Alumno">${esc(item.alumno)}</td>
+      <td data-label="Autorizó" class="muted">${esc(item.profesor)}</td>
+      <td data-label="Devuelta" class="muted">${esc(item.fechaHora)}</td>
+      <td data-label="Tiempo total" class="tiempo">${esc(item.tiempoTotal)}</td>
+      <td data-label="Observaciones">
+        ${tieneFalla
+          ? `<span class="falla-badge"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> ${esc(item.falla)}</span>`
+          : `<span class="sin-fallas">${esc(item.falla || 'Sin fallas')}</span>`}
       </td>
     `;
     tbody.appendChild(tr);
