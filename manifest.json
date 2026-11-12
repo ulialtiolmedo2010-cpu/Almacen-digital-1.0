@@ -1,22 +1,201 @@
-{
-  "short_name": "Almacén Digital",
-  "name": "Almacén Digital 10",
-  "description": "Sistema de gestión e inventario",
-  "start_url": "/",
-  "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#111827",
-  "orientation": "any",
-  "icons": [
-    {
-      "src": "/icon-192.png",
-      "type": "image/png",
-      "sizes": "192x192"
-    },
-    {
-      "src": "/icon-512.png",
-      "type": "image/png",
-      "sizes": "512x512"
-    }
-  ]
-}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#090d16">
+  <title>Gestión de Carrito - Espacio Digital</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+
+  <!-- FontAwesome para iconos -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- QRCode.js para generar códigos QR -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" type="image/png" href="35.png">
+  <link rel="manifest" href="manifest.json">
+</head>
+<body>
+
+  <header class="header">
+    <div class="header-content">
+      <div class="brand">
+        <div class="brand-icon" aria-hidden="true">
+          <i class="fa-solid fa-laptop-house"></i>
+        </div>
+        <div>
+          <h1>Espacio Digital</h1>
+          <p>Control e inventario del carrito</p>
+        </div>
+      </div>
+
+      <div class="metrics" aria-label="Resumen del carrito">
+        <div class="metric metric-ok">
+          <strong id="stat-disponibles">0</strong>
+          <span>Disponibles</span>
+        </div>
+        <div class="metric metric-out">
+          <strong id="stat-prestadas">0</strong>
+          <span>En préstamo</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-container">
+
+    <div id="btn-volver-container" class="hidden">
+      <button type="button" onclick="volverACarritos()" class="btn ghost">
+        <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Volver a carritos
+      </button>
+    </div>
+
+    <section class="section">
+      <div class="section-header">
+        <div>
+          <h2 id="titulo-seccion"><i class="fa-solid fa-boxes-stacked" aria-hidden="true"></i> Selección de carrito</h2>
+          <p id="subtitulo-seccion">Elegí un carrito para ver sus computadoras.</p>
+        </div>
+
+        <div class="search-box hidden" id="search-box-container">
+          <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+          <input type="search" id="input-busqueda" placeholder="Buscar por número o alumno" aria-label="Buscar computadora">
+        </div>
+      </div>
+
+      <!-- Filtros por estado (solo dentro del carrito) -->
+      <div class="chips hidden" id="filtros-container" role="group" aria-label="Filtrar por estado">
+        <button type="button" class="chip is-active" data-filtro="todas" onclick="cambiarFiltro('todas')">Todas</button>
+        <button type="button" class="chip" data-filtro="disponible" onclick="cambiarFiltro('disponible')">Disponibles</button>
+        <button type="button" class="chip" data-filtro="prestada" onclick="cambiarFiltro('prestada')">Prestadas</button>
+      </div>
+
+      <div id="grid-carrito" class="grid-carrito">
+        <!-- Generado dinámicamente -->
+      </div>
+    </section>
+
+    <section class="section history-section">
+      <div class="section-header">
+        <h3><i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i> Historial de devoluciones</h3>
+        <span id="historial-count" class="count-tag">0 registros</span>
+      </div>
+
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>Compu</th>
+              <th>Alumno</th>
+              <th>Autorizó</th>
+              <th>Devuelta</th>
+              <th>Tiempo total</th>
+              <th>Observaciones</th>
+            </tr>
+          </thead>
+          <tbody id="tabla-historial">
+            <!-- Filas dinámicas -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- MODAL: REGISTRAR PRÉSTAMO -->
+  <div id="modal-prestamo" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="titulo-prestamo">
+    <div class="modal-content">
+      <button type="button" onclick="cerrarModal('modal-prestamo')" class="close-btn" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+
+      <div class="modal-header">
+        <div class="modal-icon ok-bg"><i class="fa-solid fa-hand-holding-hand" aria-hidden="true"></i></div>
+        <div>
+          <h3 id="titulo-prestamo">Registrar salida</h3>
+          <p id="modal-prestamo-titulo">Compu N° --</p>
+        </div>
+      </div>
+
+      <form id="form-prestamo" onsubmit="confirmarPrestamo(event)">
+        <input type="hidden" id="prestamo-id-compu">
+
+        <div class="form-group">
+          <label for="input-alumno">Alumno o persona que se la lleva</label>
+          <input type="text" id="input-alumno" required placeholder="Ej: Ramiro Gil" autocomplete="off">
+        </div>
+
+        <div class="form-group">
+          <label for="input-profesor">Profesor o preceptor que la autoriza</label>
+          <input type="text" id="input-profesor" required placeholder="Ej: Prof. García" autocomplete="off">
+        </div>
+
+        <div class="form-group">
+          <label for="input-obs-salida">Observación inicial <span class="optional">(opcional)</span></label>
+          <input type="text" id="input-obs-salida" placeholder="Ej: batería baja, sin mouse" autocomplete="off">
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" onclick="cerrarModal('modal-prestamo')" class="btn ghost">Cancelar</button>
+          <button type="submit" class="btn success">Confirmar préstamo</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: REGISTRAR DEVOLUCIÓN -->
+  <div id="modal-devolucion" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="titulo-devolucion">
+    <div class="modal-content">
+      <button type="button" onclick="cerrarModal('modal-devolucion')" class="close-btn" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+
+      <div class="modal-header">
+        <div class="modal-icon warn-bg"><i class="fa-solid fa-arrow-rotate-left" aria-hidden="true"></i></div>
+        <div>
+          <h3 id="titulo-devolucion">Registrar devolución</h3>
+          <p id="modal-devolucion-titulo">Compu N° --</p>
+        </div>
+      </div>
+
+      <dl class="modal-info-box">
+        <div><dt>Alumno</dt><dd id="dev-alumno">--</dd></div>
+        <div><dt>Autorizó</dt><dd id="dev-profesor">--</dd></div>
+        <div><dt>Tiempo fuera</dt><dd id="dev-tiempo" class="highlight-time">--</dd></div>
+      </dl>
+
+      <form id="form-devolucion" onsubmit="confirmarDevolucion(event)">
+        <input type="hidden" id="dev-id-compu">
+
+        <div class="form-group">
+          <label for="input-falla">Estado del equipo o fallas <span class="optional">(opcional)</span></label>
+          <textarea id="input-falla" rows="3" placeholder="Ej: tecla defectuosa, rayón. Si está todo bien, dejalo vacío."></textarea>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" onclick="cerrarModal('modal-devolucion')" class="btn ghost">Cancelar</button>
+          <button type="submit" class="btn warn">Guardar devolución</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: VER CÓDIGO QR -->
+  <div id="modal-qr" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="qr-compu-titulo">
+    <div class="modal-content text-center">
+      <button type="button" onclick="cerrarModal('modal-qr')" class="close-btn" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+
+      <h3 id="qr-compu-titulo" class="modal-title-sm">Compu N° --</h3>
+      <p class="modal-subtitle">Código QR para etiquetar el equipo</p>
+
+      <div class="qr-box" id="contenedor-qr"></div>
+
+      <p class="modal-footer-text">Escanealo para abrir la ficha rápida de esta computadora.</p>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
